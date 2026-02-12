@@ -1,0 +1,9 @@
+# Build artifacts
+build/
+# macOS
+.DS_Store
+# IDF local logs
+build/log/
+# IDE
+.vscode/
+.idea/
