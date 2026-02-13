@@ -99,15 +99,22 @@ void update() {
     if (now - state.lastEncoderBroadcast >= broadcastInterval) {
         if (fsm_state.currentState != InjectorStates::ERROR_STATE && flags.initialHomingDone) {
             BroadcastDataStore& bds = BroadcastDataStore::getInstance();
-            broadcastEncoder(bds.getPosition(), bds.getVelocity());
+            broadcastEncoder(bds.getPosition());
+            broadcastTemp(bds.getTemperature());
         }
         state.lastEncoderBroadcast = now;
     }
 }
 
-void broadcastEncoder(float position, float velocity) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "ENC|%.3f|%.3f\n", position, velocity);
+void broadcastEncoder(float position) {
+    char msg[48];
+    snprintf(msg, sizeof(msg), "ENC|%.3f\n", position);
+    uart_send(msg);
+}
+
+void broadcastTemp(float tempC) {
+    char msg[48];
+    snprintf(msg, sizeof(msg), "TEMP|%.2f\n", tempC);
     uart_send(msg);
 }
 

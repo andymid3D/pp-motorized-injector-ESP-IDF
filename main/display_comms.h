@@ -13,7 +13,8 @@ namespace DisplayComms {
 void begin();
 void update();
 
-void broadcastEncoder(float position, float velocity);
+void broadcastEncoder(float position);
+void broadcastTemp(float tempC);
 void broadcastState(InjectorStates state);
 void broadcastError(uint16_t errorCode, const char* errorMsg);
 
@@ -30,7 +31,8 @@ namespace DisplayComms {
 
 inline void begin() {}
 inline void update() {}
-inline void broadcastEncoder(float, float) {}
+inline void broadcastEncoder(float) {}
+inline void broadcastTemp(float) {}
 inline void broadcastState(InjectorStates) {}
 inline void broadcastError(uint16_t, const char*) {}
 inline void sendMouldParamsConfirm(const actualMouldParams_t&) {}
