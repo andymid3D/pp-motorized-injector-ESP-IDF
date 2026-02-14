@@ -1,6 +1,8 @@
 #include "temperature.h"
 #include "esp_adc/adc_oneshot.h"
 #include "config.h"
+#include "time_utils.h"
+#include <cmath>
 
 static bool adc_initialized = false;
 static adc_oneshot_unit_handle_t adc_handle = nullptr;
@@ -40,10 +42,56 @@ int readTemperatureC() {
     float voltage = (avgAdc / 4095.0f) * 3.3f;
     float currentTemp = voltage / 0.01f;
 
-    if (currentTemp < 5.0f) return lastValidTemp;
-    static float smoothedTemp = 0;
-    if (smoothedTemp == 0) smoothedTemp = currentTemp;
-    smoothedTemp = (smoothedTemp * 0.80f) + (currentTemp * 0.20f);
-    lastValidTemp = (int)smoothedTemp;
+    if (currentTemp < TEMP_MIN_VALID_C) return lastValidTemp;
+
+    struct Sample { float temp; uint32_t ms; };
+    static Sample history[64];
+    static int head = 0;
+    static bool historyInit = false;
+
+    uint32_t nowMs = (uint32_t)time_utils::millis();
+    history[head] = {currentTemp, nowMs};
+    head = (head + 1) % 64;
+    if (!historyInit && head == 0) historyInit = true;
+
+    float temps[64];
+    int count = 0;
+    int limit = historyInit ? 64 : head;
+    for (int i = 0; i < limit; i++) {
+        uint32_t age = nowMs - history[i].ms;
+        if (age <= TEMP_FILTER_WINDOW_MS) {
+            temps[count++] = history[i].temp;
+        }
+    }
+    if (count == 0) return lastValidTemp;
+
+    // Median
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - i - 1; j++) {
+            if (temps[j] > temps[j + 1]) {
+                float tmp = temps[j];
+                temps[j] = temps[j + 1];
+                temps[j + 1] = tmp;
+            }
+        }
+    }
+    float median = (count % 2 == 1)
+        ? temps[count / 2]
+        : 0.5f * (temps[count / 2 - 1] + temps[count / 2]);
+
+    // Remove outliers from median and average remaining
+    float sumFiltered = 0.0f;
+    int kept = 0;
+    for (int i = 0; i < count; i++) {
+        float t = temps[i];
+        if (std::fabs(t - median) <= TEMP_OUTLIER_C) {
+            sumFiltered += t;
+            kept++;
+        }
+    }
+    float filtered = (kept > 0) ? (sumFiltered / kept) : median;
+
+    filtered += TEMP_CALIB_OFFSET_C;
+    lastValidTemp = (int)filtered;
     return lastValidTemp;
 }

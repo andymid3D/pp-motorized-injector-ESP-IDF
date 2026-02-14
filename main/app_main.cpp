@@ -141,9 +141,11 @@ extern "C" void app_main(void) {
         if (MotorWrapper::isTempCritical()) {
             if (loopNowUs - lastTempOnlyLog > 1000000ULL) {
                 lastTempOnlyLog = loopNowUs;
-                ESP_LOGI(TAG, "TEMP_ONLY Temp:%d Contactor:%s",
+                long prRaw = safety.getLoadCellRaw();
+                ESP_LOGI(TAG, "TEMP_ONLY Temp:%d Contactor:%s Pr:%ld",
                          fsm_inputs.nozzleTemperature,
-                         safety.isMotorPowerEnabled() ? "ON" : "OFF");
+                         safety.isMotorPowerEnabled() ? "ON" : "OFF",
+                         prRaw);
             }
             if (!tempCriticalStopIssued && safety.isMotorPowerEnabled()) {
                 MotorWrapper::setModeAndMove(motor, 2, 1, 0, MODULE_SAFETY_MANAGER, "TempCritical Stop");
@@ -570,19 +572,22 @@ extern "C" void app_main(void) {
         if (time_utils::micros() - lastDebugTime > 1000000ULL) {
             lastDebugTime = time_utils::micros();
             if (!safety.isMotorPowerEnabled()) {
-                ESP_LOGI(TAG, "TEMP_ONLY Temp:%d Contactor:%s",
+                long prRaw = safety.getLoadCellRaw();
+                ESP_LOGI(TAG, "TEMP_ONLY Temp:%d Contactor:%s Pr:%ld",
                          fsm_inputs.nozzleTemperature,
-                         safety.isMotorPowerEnabled() ? "ON" : "OFF");
+                         safety.isMotorPowerEnabled() ? "ON" : "OFF",
+                         prRaw);
             } else {
                 BroadcastDataStore& bds = BroadcastDataStore::getInstance();
                 float pos = bds.getPosition();
                 float iqSet = bds.getIqSetpoint();
                 float iqMeas = bds.getIqMeasured();
-                ESP_LOGI(TAG, "State:%s Pos:%.2f Vel:%.2f Temp:%d Err:0x%X IQ_s:%.2f IQ_m:%.2f",
+                long prRaw = safety.getLoadCellRaw();
+                ESP_LOGI(TAG, "State:%s Pos:%.2f Vel:%.2f Temp:%d Err:0x%X IQ_s:%.2f IQ_m:%.2f Pr:%ld",
                          getStateName(fsm_state.currentState),
                          pos, bds.getVelocity(),
                          fsm_inputs.nozzleTemperature, fsm_state.error,
-                         iqSet, iqMeas);
+                         iqSet, iqMeas, prRaw);
             }
         }
 

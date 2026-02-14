@@ -83,6 +83,10 @@
 #define TEMP_MIN_MOVE           20
 #define TEMP_CRITICAL           15
 #define TEMP_CRITICAL_RECOVER   17
+#define TEMP_CALIB_OFFSET_C     9.0f   // Provisional +°C offset vs external PID sensor
+#define TEMP_FILTER_WINDOW_MS   3000   // Median/outlier window
+#define TEMP_OUTLIER_C          3.0f   // Reject samples > this from median
+#define TEMP_MIN_VALID_C        5.0f
 #define DEBOUNCE_MS_SAFETY      150
 
 #define CAN_COMMAND_GAP_MS          10
