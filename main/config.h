@@ -89,6 +89,9 @@
 #define TEMP_MIN_VALID_C        5.0f
 #define DEBOUNCE_MS_SAFETY      150
 
+#define LOADCELL_AVG_SAMPLES    9
+#define LOADCELL_USE_MEDIAN     1
+
 #define CAN_COMMAND_GAP_MS          10
 #define ERROR_CLEAR_DELAY_MS        50
 #define BROADCAST_STALE_TIMEOUT_MS  100

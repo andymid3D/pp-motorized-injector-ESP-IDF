@@ -72,6 +72,9 @@ void SafetyManager::begin() {
     _loadCellBufferIdx = 0;
     _loadCellUseMedian = false;
     _lastValidReading = 0;
+
+    setLoadCellAveraging(LOADCELL_AVG_SAMPLES);
+    setLoadCellMedianFilter(LOADCELL_USE_MEDIAN != 0);
 }
 
 void SafetyManager::updateInputs() {
