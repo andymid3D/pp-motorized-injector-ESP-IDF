@@ -294,8 +294,9 @@ void SafetyManager::retareLoadCell() { _loadCell.tare(); }
 void SafetyManager::setLoadCellScale(float scale) { _loadCellScale = scale; }
 void SafetyManager::setLoadCellOffset(long offset) { _loadCellOffset = offset; }
 long SafetyManager::getLoadCellRaw() {
-    if (_loadCell.is_ready()) return _loadCell.read();
-    return 0;
+    // Return last valid reading even if HX711 is not ready in this instant.
+    // UpdateInputs() refreshes _lastValidReading when data is ready.
+    return _lastValidReading;
 }
 
 void SafetyManager::setLoadCellAveraging(uint8_t samples) {
