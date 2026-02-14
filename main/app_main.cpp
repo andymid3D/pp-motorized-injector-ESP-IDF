@@ -72,7 +72,7 @@ commonInjectParams_t commonParams = {
 };
 
 actualMouldParams_t currentMould = {
-    "Default", 35.0f, 25.0f, 20.0f, 5.0f, 2.0f, 10.0f, 2.0f, 5.0f,
+    "Default", 50.0f, 25.0f, 20.0f, 5.0f, 2.0f, 10.0f, 2.0f, 5.0f,
     REFILL_ACCEL, REFILL_DECEL, 10.0f, 10.0f
 };
 

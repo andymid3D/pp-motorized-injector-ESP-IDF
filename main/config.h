@@ -79,7 +79,7 @@
 #define MACHINE_MAX_VEL_LIMIT   25.0f
 #define GENERAL_MACHINE_CURRENT_LIMIT 31.0f
 
-#define IGNORE_NOZZLE_BLOCK     true
+#define IGNORE_NOZZLE_BLOCK     false
 #define TEMP_MIN_MOVE           20
 #define TEMP_CRITICAL           15
 #define TEMP_CRITICAL_RECOVER   17
@@ -91,6 +91,8 @@
 
 #define LOADCELL_AVG_SAMPLES    9
 #define LOADCELL_USE_MEDIAN     1
+#define PRESSURE_BLOCK_MIN          20000L   // Provisional raw threshold
+#define PRESSURE_BLOCK_MIN_DIST_TURNS 30.0f  // From refill start before block check
 
 #define CAN_COMMAND_GAP_MS          10
 #define ERROR_CLEAR_DELAY_MS        50

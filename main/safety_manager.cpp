@@ -274,7 +274,8 @@ bool SafetyManager::check(float current_velocity, bool is_moving_down) {
 
         if (_currentContext == CTX_BLOCKED) {
 #ifndef IGNORE_NOZZLE_BLOCK
-            if (distMoved > 10.0f && std::abs(pressureDelta) < PRESSURE_BLOCK_MIN) {
+            if (distMoved > PRESSURE_BLOCK_MIN_DIST_TURNS &&
+                std::abs(pressureDelta) < PRESSURE_BLOCK_MIN) {
                 triggerHalt(ERR_NOZZLE_NOT_BLOCKED);
                 return false;
             }
