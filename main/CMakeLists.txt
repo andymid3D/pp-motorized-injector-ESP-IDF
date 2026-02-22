@@ -24,7 +24,7 @@ idf_component_register(
         "debug_console.cpp"
         "display_comms.cpp"
     INCLUDE_DIRS "."
-    REQUIRES esp_driver_rmt esp_driver_gpio esp_driver_twai esp_driver_uart esp_timer esp_adc driver
+    REQUIRES esp_driver_rmt esp_driver_gpio esp_driver_twai esp_driver_uart esp_timer esp_adc driver nvs_flash
 )
 
 target_compile_features(${COMPONENT_LIB} PRIVATE cxx_std_17)

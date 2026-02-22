@@ -61,7 +61,7 @@ namespace Compression {
                     return false;
                 }
                 MotorWrapper::setMotorLimits(motor, COMPRESS_TRAVEL_VEL_LIMIT, COMPRESS_TRAVEL_CURRENT, MODULE_COMPRESSION, "Compress Travel");
-                if (!MotorWrapper::setModeAndMove(motor, 1, 6, COMPRESS_TRAVEL_TORQUE, MODULE_COMPRESSION, "Compress Travel Down Torque")) {
+                if (!MotorWrapper::setModeAndMove(motor, 1, 6, commonParams.compressTravelTorque, MODULE_COMPRESSION, "Compress Travel Down Torque")) {
                     return false;
                 }
                 lastCommandTime = time_utils::micros();

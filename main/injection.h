@@ -17,8 +17,11 @@ namespace Injection {
     float getInjectStartPos();
     float getTargetInjectPos();
     float getTargetPackPos();
+    float getInjectTargetPos();
     float getInjectVolumeFromPos(float currentPos);
     float getTargetInjectVolume();
+    float getInjectTorque();
+    bool isTorqueMode();
 
     void reset();
 }

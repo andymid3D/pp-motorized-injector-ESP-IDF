@@ -57,6 +57,9 @@ void HX711::tare() {
     // Simple tare: average 10 readings
     int64_t sum = 0;
     int samples = 10;
+    // Ensure we measure raw values during tare
+    int32_t saved_offset = offset_;
+    offset_ = 0;
     for (int i = 0; i < samples; ++i) {
         while (!is_ready()) {
             esp_rom_delay_us(10);
@@ -64,4 +67,5 @@ void HX711::tare() {
         sum += read();
     }
     offset_ = static_cast<int32_t>(sum / samples);
+    (void)saved_offset;
 }

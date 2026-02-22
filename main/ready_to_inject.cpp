@@ -49,14 +49,14 @@ namespace ReadyToInject {
                 int tempC = readTemperatureC();
                 ESP_LOGI("READY_TO_INJECT", "MICRO idle: since=%llums interval=%ums canStart=%d temp=%d vel=%.2f",
                          (unsigned long long)(timeSinceLastCompress / 1000ULL),
-                         READY_MICRO_INTERVAL_MS,
+                         commonParams.microIntervalMs,
                          MotorWrapper::canStartMove(),
                          tempC,
                          bds.getVelocity());
                 lastStateLogUs = now;
             }
 #endif
-            if (timeSinceLastCompress >= (READY_MICRO_INTERVAL_MS * 1000ULL)) {
+            if (timeSinceLastCompress >= (commonParams.microIntervalMs * 1000ULL)) {
                 if (!MotorWrapper::canStartMove()) {
 #if APP_DEBUG
                     if (now - lastSkipLogUs > 1000000ULL) {
@@ -80,10 +80,13 @@ namespace ReadyToInject {
 
         if (state == MICRO_COMPRESSING) {
             uint64_t compressionElapsed = now - compressionStartTime;
-            float rampDuration = READY_MICRO_DURATION_MS / 1000.0f;
+            float rampDuration = commonParams.microDurationMs / 1000.0f;
             float elapsedSec = compressionElapsed / 1000000.0f;
-            float targetTorque = (commonParams.compressMicroCurrent / rampDuration) * elapsedSec;
-            if (targetTorque > commonParams.compressMicroCurrent) targetTorque = commonParams.compressMicroCurrent;
+            float targetTorque = 0.0f;
+            if (rampDuration > 0.0f) {
+                targetTorque = (COMPRESS_MICRO_CURRENT / rampDuration) * elapsedSec;
+            }
+            if (targetTorque > COMPRESS_MICRO_CURRENT) targetTorque = COMPRESS_MICRO_CURRENT;
 
             if (!torqueCommandSent || (now - lastCommandTime) > 200000ULL) {
                 bool commandQueued = MotorWrapper::setModeAndMoveWithRetry(
@@ -102,11 +105,11 @@ namespace ReadyToInject {
                 }
             }
 
-            bool completedByTime = compressionElapsed >= (READY_MICRO_DURATION_MS * 1000ULL);
+            bool completedByTime = compressionElapsed >= (commonParams.microDurationMs * 1000ULL);
             const TimestampedIq* iqData = bds.getLatestIq();
             bool completedByTorque = false;
             if (iqData && compressionElapsed > 200000ULL) {
-                completedByTorque = std::fabs(iqData->iqMeasured) >= (commonParams.compressMicroCurrent * 0.9f);
+                completedByTorque = std::fabs(iqData->iqMeasured) >= (COMPRESS_MICRO_CURRENT * 0.9f);
             }
 
             if (completedByTime || completedByTorque) {

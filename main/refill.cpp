@@ -40,8 +40,8 @@ namespace Refill {
                     return false;
                 }
                 MotorWrapper::setMotorLimits(motor, REFILL_CONTROLLER_VEL_LIMIT, REFILL_CURRENT_LIMIT, MODULE_REFILL, "Refill");
-                MotorWrapper::setTrapTrajParams(motor, commonParams.refillTrapVelLimit,
-                                                commonParams.refillAccel, commonParams.refillDecel,
+                MotorWrapper::setTrapTrajParams(motor, REFILL_TRAP_VEL_LIMIT,
+                                                commonParams.trapTrajAccelDecel, commonParams.trapTrajAccelDecel,
                                                 MODULE_REFILL, "Refill Traj");
                 if (!MotorWrapper::setModeAndMove(motor, 3, 5, OFFSET_REFILL_GAP, MODULE_REFILL, "Pos Refill")) {
                     return false;

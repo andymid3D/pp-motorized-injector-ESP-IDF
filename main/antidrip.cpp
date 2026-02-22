@@ -2,7 +2,11 @@
 #include "config.h"
 #include "motor_wrapper.h"
 #include "time_utils.h"
+#include "injector_fsm.h"
 #include "esp_log.h"
+#include <cmath>
+
+extern commonInjectParams_t commonParams;
 
 namespace AntiDrip {
     static bool stateEntry = false;
@@ -13,6 +17,7 @@ namespace AntiDrip {
     static bool error = false;
     static uint64_t lastCommandTime = 0;
     static bool pressureSensorChecked = false;
+    static bool stopCommanded = false;
 
     void begin() {
         stateEntry = true;
@@ -23,6 +28,7 @@ namespace AntiDrip {
         error = false;
         lastCommandTime = time_utils::millis();
         pressureSensorChecked = false;
+        stopCommanded = false;
     }
 
     bool update(CanBus& motor) {
@@ -39,8 +45,11 @@ namespace AntiDrip {
                 }
                 return false;
             }
-            MotorWrapper::setMotorLimits(motor, ANTIDRIP_VEL_LIMIT, ANTIDRIP_CURRENT_LIMIT, MODULE_ANTIDRIP, "AntiDrip");
-            if (!MotorWrapper::setModeAndMove(motor, 2, 1, ANTIDRIP_VEL, MODULE_ANTIDRIP, "AntiDrip Up")) {
+            float velLimit = ANTIDRIP_VEL_LIMIT;
+            float cmdLimit = std::fabs(commonParams.antidripVel);
+            if (cmdLimit > velLimit) velLimit = cmdLimit;
+            MotorWrapper::setMotorLimits(motor, velLimit, commonParams.antidripCurrentLimit, MODULE_ANTIDRIP, "AntiDrip");
+            if (!MotorWrapper::setModeAndMove(motor, 2, 1, commonParams.antidripVel, MODULE_ANTIDRIP, "AntiDrip Up")) {
                 if (!loggedNoMove) {
 #if APP_DEBUG
                     ESP_LOGW("ANTIDRIP", "COMMAND FAILED");
@@ -65,7 +74,10 @@ namespace AntiDrip {
         if (elapsed > ANTIDRIP_TIMEOUT_MS) {
             isTimeoutFlag = true;
             complete = true;
-            MotorWrapper::setModeAndMove(motor, 2, 1, 0, MODULE_ANTIDRIP, "AntiDrip Stop");
+            if (!stopCommanded) {
+                MotorWrapper::setModeAndMove(motor, 2, 1, 0, MODULE_ANTIDRIP, "AntiDrip Stop");
+                stopCommanded = true;
+            }
             return true;
         }
 

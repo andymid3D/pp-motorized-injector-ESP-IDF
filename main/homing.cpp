@@ -491,6 +491,7 @@ void Homing::handleResetEncoder(CanBus& motor, SafetyManager& safety) {
         return;
     }
     motor.setLinearCount(0);
+    safety.retareLoadCell(); // ensure pressure baseline after homing
     encoderZeroed_ = true;
     nextState(HomingState::DONE);
 }

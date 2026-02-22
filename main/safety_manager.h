@@ -5,6 +5,7 @@
 #include "debounced_input.h"
 #include "hx711.h"
 #include "config.h"
+#include "nvs.h"
 
 enum MachineError {
     ERR_NONE = 0,
@@ -61,6 +62,7 @@ public:
     long getLoadCellRaw();
     void setLoadCellAveraging(uint8_t samples);
     void setLoadCellMedianFilter(bool enable);
+    uint32_t getContactorCycles() const { return _contactorCycles; }
 
     DebouncedInput& getTopEndstop() { return dbTop; }
     DebouncedInput& getBottomEndstop() { return dbBot; }
@@ -100,6 +102,10 @@ private:
     uint64_t _lastPowerEnableTimeUs;
     uint64_t _lastPowerDisableTimeUs;
     uint64_t _lastPowerEnableBlockLogUs;
+
+    nvs_handle_t _nvsHandle;
+    uint32_t _contactorCycles;
+    bool _contactorWarned;
 
     static const uint8_t CONFIDENCE_THRESHOLD = 50;
 };

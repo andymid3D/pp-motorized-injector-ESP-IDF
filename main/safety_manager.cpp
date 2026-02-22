@@ -3,6 +3,7 @@
 #include "time_utils.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 #include <cmath>
 #include <cstring>
 
@@ -32,7 +33,10 @@ SafetyManager::SafetyManager()
       _motorPowerEnabled(false),
       _lastPowerEnableTimeUs(0),
       _lastPowerDisableTimeUs(0),
-      _lastPowerEnableBlockLogUs(0) {
+      _lastPowerEnableBlockLogUs(0),
+      _nvsHandle(0),
+      _contactorCycles(0),
+      _contactorWarned(false) {
 }
 
 SafetyManager& SafetyManager::getInstance() {
@@ -47,6 +51,19 @@ void SafetyManager::begin() {
     _lastPowerEnableTimeUs = 0;
     _lastPowerDisableTimeUs = 0;
     _lastPowerEnableBlockLogUs = 0;
+    _contactorWarned = false;
+
+    if (nvs_open("injector", NVS_READWRITE, &_nvsHandle) == ESP_OK) {
+        uint32_t stored = 0;
+        esp_err_t err = nvs_get_u32(_nvsHandle, "cont_cycles", &stored);
+        if (err == ESP_OK) {
+            _contactorCycles = stored;
+        } else if (err == ESP_ERR_NVS_NOT_FOUND) {
+            _contactorCycles = 0;
+        }
+    } else {
+        _nvsHandle = 0;
+    }
 
     // Endstops / Estop: external pullups, active state handled in debouncer
     dbEStop.begin((gpio_num_t)PIN_ESTOP, false, 20, true);
@@ -195,6 +212,20 @@ void SafetyManager::enableMotorPower(bool enable) {
         ESP_LOGI(TAG, "CONTACTOR ON");
     }
 #endif
+    if (!wasEnabled) {
+        if (_contactorCycles < 0xFFFFFFFFu) {
+            _contactorCycles++;
+            if (_nvsHandle) {
+                nvs_set_u32(_nvsHandle, "cont_cycles", _contactorCycles);
+                nvs_commit(_nvsHandle);
+            }
+        }
+        uint32_t warnAt = static_cast<uint32_t>(CONTACTOR_CYCLE_LIMIT * CONTACTOR_WARN_THRESHOLD);
+        if (!_contactorWarned && _contactorCycles >= warnAt) {
+            _contactorWarned = true;
+            ESP_LOGW(TAG, "CONTACTOR_LIFE_WARN cycles=%u limit=%u", _contactorCycles, CONTACTOR_CYCLE_LIMIT);
+        }
+    }
 }
 
 void SafetyManager::triggerHalt(MachineError err) {

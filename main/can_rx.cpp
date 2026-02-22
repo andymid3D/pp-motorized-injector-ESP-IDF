@@ -91,6 +91,10 @@ void CanRxHandler::pollAndProcess() {
         float iq_set = odrive_can::get_f32_le(frame.data);
         float iq_meas = odrive_can::get_f32_le(frame.data + 4);
         bds.storeIq(iq_set, iq_meas, timestamp, false);
+    } else if (cmdId == odrive_can::CYCLIC_BUS_VI) {
+        float bus_voltage = odrive_can::get_f32_le(frame.data);
+        float bus_current = odrive_can::get_f32_le(frame.data + 4);
+        bds.storeBusVI(bus_voltage, bus_current, timestamp, false);
     } else if (cmdId == odrive_can::CYCLIC_MOTOR_ERROR) {
         uint64_t motor_error = odrive_can::get_u64_le(frame.data);
         bds.storeMotorError(motor_error, timestamp, false);

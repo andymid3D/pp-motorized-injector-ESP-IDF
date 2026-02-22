@@ -43,27 +43,21 @@ struct fsm_inputs {
 using fsm_inputs_t = fsm_inputs;
 
 struct commonInjectParams {
-    float refillTrapVelLimit;
-    float refillAccel;
-    float refillDecel;
+    float trapTrajAccelDecel;
+    float compressTravelTorque;
+    uint32_t microIntervalMs;
+    uint32_t microDurationMs;
 
-    float compressRampTarget;
-    float compressRampDuration;
-    float compressMicroCurrent;
+    float purgeVelUp;
+    float purgeVelDown;
+    float purgeCurrentLimit;
 
-    float injectFillTrapVelLimit;
-    float injectFillAccel;
-    float injectFillDecel;
-    float injectFillCurrent;
+    float antidripVel;
+    float antidripCurrentLimit;
 
-    float injectPackTrapVelLimit;
-    float injectPackAccel;
-    float injectPackDecel;
-    float injectPackCurrent;
-
-    float injectVelThreshold;
-    float injectPosLolerance;
-    uint32_t injectStableTimeMs;
+    float releaseDist;
+    float releaseTrapVelLimit;
+    float releaseCurrentLimit;
 };
 
 using commonInjectParams_t = commonInjectParams;

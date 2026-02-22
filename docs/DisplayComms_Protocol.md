@@ -39,7 +39,7 @@ ENC|<position>
 ```
 
 **Fields:**
-- `position` (float): Encoder position in turns (e.g., `45.23`)
+- `position` (float): Encoder position in turns (e.g., `45.23`). Display converts to cm³.
 
 **Example:**
 ```
@@ -137,27 +137,29 @@ ERROR|0x0007|BOTTOM_ENDSTOP_COLLISION
 **Frequency:** Response to `MOULD|...` command
 
 ```
-MOULD_OK|<name>|<fill_vol>|<fill_speed>|<fill_pressure>|<pack_vol>|<pack_speed>|<pack_pressure>|<pack_time>|<cooling_time>|<fill_accel>|<fill_decel>|<pack_accel>|<pack_decel>
+MOULD_OK|<name>|<fill_vol>|<fill_speed>|<fill_pressure>|<pack_vol>|<pack_speed>|<pack_pressure>|<pack_time>|<cooling_time>|<fill_accel>|<fill_decel>|<pack_accel>|<pack_decel>|<mode>|<inject_torque>
 ```
 
-**Fields:** (13 total)
+**Fields:** (15 total)
 1. `name` (string): Mould name (max 64 chars)
 2. `fill_vol` (float): Fill volume in cm³
 3. `fill_speed` (float): Fill velocity limit (turns/sec)
-4. `fill_pressure` (float): Fill pressure limit (torque Nm)
+4. `fill_pressure` (float): Fill pressure limit (torque/current)
 5. `pack_vol` (float): Pack volume in cm³
 6. `pack_speed` (float): Pack velocity limit (turns/sec)
-7. `pack_pressure` (float): Pack pressure limit (torque Nm)
+7. `pack_pressure` (float): Pack pressure limit (torque/current)
 8. `pack_time` (float): Pack duration in seconds
 9. `cooling_time` (float): Cooling duration in seconds (Display-side timer)
 10. `fill_accel` (float): Fill trap accel limit (turns/sec²)
 11. `fill_decel` (float): Fill trap decel limit (turns/sec²)
 12. `pack_accel` (float): Pack trap accel limit (turns/sec²)
 13. `pack_decel` (float): Pack trap decel limit (turns/sec²)
+14. `mode` (string): `2D` or `3D`
+15. `inject_torque` (float): Used only when `mode=3D`
 
 **Example:**
 ```
-MOULD_OK|TestMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0
+MOULD_OK|TestMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0|2D|0.0
 ```
 
 ---
@@ -167,27 +169,24 @@ MOULD_OK|TestMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0
 **Frequency:** Response to `COMMON|...` or `QUERY_COMMON` command
 
 ```
-COMMON_OK|<refill_vel>|<refill_accel>|<refill_decel>|<compress_ramp_target>|<compress_ramp_duration>|<compress_micro_current>|<inj_fill_vel>|<inj_fill_accel>|<inj_fill_decel>|<inj_fill_current>|<inj_pack_vel>|<inj_pack_accel>|<inj_pack_decel>|<inj_pack_current>|<inj_vel_threshold>|<inj_pos_tol>|<inj_stable_ms>
+COMMON_OK|<trap_accel>|<compress_torque>|<micro_interval_ms>|<micro_duration_ms>|<purge_up>|<purge_down>|<purge_current>|<antidrip_vel>|<antidrip_current>|<release_dist>|<release_trap_vel>|<release_current>|<cont_cycles>|<cont_limit>
 ```
 
-**Fields:** (17 total)
-1. `refill_vel` (float)
-2. `refill_accel` (float)
-3. `refill_decel` (float)
-4. `compress_ramp_target` (float)
-5. `compress_ramp_duration` (float)
-6. `compress_micro_current` (float)
-7. `inj_fill_vel` (float)
-8. `inj_fill_accel` (float)
-9. `inj_fill_decel` (float)
-10. `inj_fill_current` (float)
-11. `inj_pack_vel` (float)
-12. `inj_pack_accel` (float)
-13. `inj_pack_decel` (float)
-14. `inj_pack_current` (float)
-15. `inj_vel_threshold` (float)
-16. `inj_pos_tol` (float)
-17. `inj_stable_ms` (uint32)
+**Fields:** (14 total)
+1. `trap_accel` (float): General trap accel/decel (turns/sec²)
+2. `compress_torque` (float): Compression travel torque/current command
+3. `micro_interval_ms` (uint32): Micro-compress interval (ms)
+4. `micro_duration_ms` (uint32): Micro-compress duration (ms)
+5. `purge_up` (float): Purge up velocity
+6. `purge_down` (float): Purge down velocity
+7. `purge_current` (float): Purge current limit
+8. `antidrip_vel` (float): Antidrip velocity
+9. `antidrip_current` (float): Antidrip current limit
+10. `release_dist` (float): Release travel distance (turns)
+11. `release_trap_vel` (float): Release trap velocity limit
+12. `release_current` (float): Release current limit
+13. `cont_cycles` (uint32): Contactor cycle count
+14. `cont_limit` (uint32): Contactor cycle limit
 
 ---
 
@@ -198,16 +197,16 @@ COMMON_OK|<refill_vel>|<refill_accel>|<refill_decel>|<compress_ramp_target>|<com
 **Response:** `MOULD_OK|...` confirmation
 
 ```
-MOULD|<name>|<fill_vol>|<fill_speed>|<fill_pressure>|<pack_vol>|<pack_speed>|<pack_pressure>|<pack_time>|<cooling_time>|<fill_accel>|<fill_decel>|<pack_accel>|<pack_decel>
+MOULD|<name>|<fill_vol>|<fill_speed>|<fill_pressure>|<pack_vol>|<pack_speed>|<pack_pressure>|<pack_time>|<cooling_time>|<fill_accel>|<fill_decel>|<pack_accel>|<pack_decel>|<mode>|<inject_torque>
 ```
 
-**Fields:** Same as `MOULD_OK` response (13 total)
+**Fields:** Same as `MOULD_OK` response (15 total)
 
 **Safety:** Controller should only accept this command when FSM state is REFILL or READY_TO_INJECT (not during active injection).
 
 **Example:**
 ```
-MOULD|My2DMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0
+MOULD|My2DMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0|2D|0.0
 ```
 
 ---
@@ -217,10 +216,10 @@ MOULD|My2DMould|35.0|25.0|20.0|5.0|2.0|10.0|2.0|0.0|20.0|20.0|10.0|10.0
 **Response:** `COMMON_OK|...` confirmation
 
 ```
-COMMON|<refill_vel>|<refill_accel>|<refill_decel>|<compress_ramp_target>|<compress_ramp_duration>|<compress_micro_current>|<inj_fill_vel>|<inj_fill_accel>|<inj_fill_decel>|<inj_fill_current>|<inj_pack_vel>|<inj_pack_accel>|<inj_pack_decel>|<inj_pack_current>|<inj_vel_threshold>|<inj_pos_tol>|<inj_stable_ms>
+COMMON|<trap_accel>|<compress_torque>|<micro_interval_ms>|<micro_duration_ms>|<purge_up>|<purge_down>|<purge_current>|<antidrip_vel>|<antidrip_current>|<release_dist>|<release_trap_vel>|<release_current>
 ```
 
-**Note:** Only accepted in safe states (e.g., REFILL or READY_TO_INJECT).
+**Note:** Only accepted in safe states: `INIT_HEATING`, `INIT_HOT_WAIT`, `REFILL`, `READY_TO_INJECT`, `PURGE_ZERO` (only when motor idle), `CONFIRM_REMOVAL`.
 
 ---
 
@@ -314,8 +313,7 @@ if (error_detected) {
 
 #### 3. Encoder Position Updates
 - Parse `ENC|...` messages every 100ms
-- Update plunger graphics in real-time
-- Use velocity for direction indicator (+ = down, - = up)
+- Update plunger graphics in real-time (position is in turns; Display converts to cm³)
 
 #### 4. State Synchronization
 - Parse `STATE|...` messages immediately
