@@ -190,6 +190,13 @@ extern "C" void app_main(void) {
       lastCanOfflineLogUs = 0;
     }
 
+    // Always update buttons, comms and console even if machine is cold
+    btnCenter.update();
+    btnUpper.update();
+    btnLower.update();
+    debug_console_poll();
+    DisplayComms::update();
+
     if (MotorWrapper::isTempCritical()) {
       if (loopNowUs - lastTempOnlyLog > 1000000ULL) {
         lastTempOnlyLog = loopNowUs;
@@ -212,10 +219,6 @@ extern "C" void app_main(void) {
     } else {
       tempCriticalStopIssued = false;
     }
-
-    btnCenter.update();
-    btnUpper.update();
-    btnLower.update();
 
 #if APP_DEBUG
     if (btnUpper.fell())
@@ -240,9 +243,6 @@ extern "C" void app_main(void) {
       lastButtonLogUs = loopNowUs;
     }
 #endif
-
-    debug_console_poll();
-    DisplayComms::update();
 
     // Track 1s peak values for logging
     {
