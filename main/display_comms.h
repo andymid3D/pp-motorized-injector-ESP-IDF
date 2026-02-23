@@ -1,10 +1,10 @@
 #ifndef DISPLAY_COMMS_H
 #define DISPLAY_COMMS_H
 
-#include <cstdint>
 #include "config.h"
 #include "injector_fsm.h"
 #include "mould.h"
+#include <cstdint>
 
 #if APP_DISPLAY_UART
 
@@ -16,12 +16,13 @@ void update();
 void broadcastEncoder(float position);
 void broadcastTemp(float tempC);
 void broadcastState(InjectorStates state);
-void broadcastError(uint16_t errorCode, const char* errorMsg);
+void broadcastError(uint16_t errorCode, const char *errorMsg);
+void broadcastEndOfDay(bool active);
 
-void sendMouldParamsConfirm(const actualMouldParams_t& params);
+void sendMouldParamsConfirm(const actualMouldParams_t &params);
 void sendCommonParamsConfirm();
 
-void parseIncomingMessage(const char* message);
+void parseIncomingMessage(const char *message);
 
 } // namespace DisplayComms
 
@@ -34,10 +35,10 @@ inline void update() {}
 inline void broadcastEncoder(float) {}
 inline void broadcastTemp(float) {}
 inline void broadcastState(InjectorStates) {}
-inline void broadcastError(uint16_t, const char*) {}
-inline void sendMouldParamsConfirm(const actualMouldParams_t&) {}
+inline void broadcastError(uint16_t, const char *) {}
+inline void sendMouldParamsConfirm(const actualMouldParams_t &) {}
 inline void sendCommonParamsConfirm() {}
-inline void parseIncomingMessage(const char*) {}
+inline void parseIncomingMessage(const char *) {}
 
 } // namespace DisplayComms
 

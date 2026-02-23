@@ -18,6 +18,7 @@ extern actualMouldParams_t currentMould;
 extern fsm_state_t fsm_state;
 extern MachineFlags flags;
 extern SafetyManager safety;
+extern volatile InjectorStates requestedRemoteState;
 
 namespace DisplayComms {
 
@@ -89,6 +90,35 @@ static const char *getStateName(InjectorStates st) {
   }
 }
 
+static const char *getErrorName(uint16_t err) {
+  switch (err) {
+  case ERR_NONE:
+    return "NONE";
+  case ERR_ESTOP:
+    return "E-STOP";
+  case ERR_BARREL_POSITION_LOST:
+    return "BARREL_OPEN_OR_LOST";
+  case ERR_NOZZLE_NOT_BLOCKED:
+    return "NOZZLE_NOT_BLOCKED";
+  case ERR_OVER_TEMP:
+    return "OVER_TEMP";
+  case ERR_HARD_LIMIT:
+    return "HARD_LIMIT";
+  case ERR_UNDER_TEMP:
+    return "UNDER_TEMP";
+  case ERR_BOTTOM_ENDSTOP_COLLISION:
+    return "BOTTOM_ENDSTOP";
+  case ERR_TOP_ENDSTOP_COLLISION:
+    return "TOP_ENDSTOP";
+  case ERR_BROADCAST_STALE:
+    return "COMMS_STALE";
+  case ERR_CAN_RTR_FAILURE:
+    return "CAN_MOTOR_ERROR";
+  default:
+    return "UNKNOWN_ERROR";
+  }
+}
+
 void begin() {
   uart_config_t uart_config = {};
   uart_config.baud_rate = DISPLAY_BAUD_RATE;
@@ -141,6 +171,7 @@ void update() {
     }
     broadcastTemp(bds.getTemperature());
     broadcastState(fsm_state.currentState);
+    broadcastEndOfDay(flags.endOfDay);
     state.lastEncoderBroadcast = now;
   }
 }
@@ -170,24 +201,31 @@ void broadcastState(InjectorStates st) {
 void broadcastError(uint16_t errorCode, const char *errorMsg) {
   if (errorCode == state.lastErrorBroadcast)
     return;
+  const char *finalMsg =
+      (errorMsg && errorMsg[0] != '\0') ? errorMsg : getErrorName(errorCode);
   char msg[128];
-  snprintf(msg, sizeof(msg), "ERROR|0x%X|%s\n", errorCode,
-           errorMsg ? errorMsg : "");
+  snprintf(msg, sizeof(msg), "ERROR|0x%X|%s\n", errorCode, finalMsg);
   uart_send(msg);
   state.lastErrorBroadcast = errorCode;
+}
+
+void broadcastEndOfDay(bool active) {
+  char msg[16];
+  snprintf(msg, sizeof(msg), "EOD|%d\n", active ? 1 : 0);
+  uart_send(msg);
 }
 
 void sendMouldParamsConfirm(const actualMouldParams_t &params) {
   char msg[512];
   const char *modeStr = (params.injectMode == INJECT_MODE_3D) ? "3D" : "2D";
   snprintf(msg, sizeof(msg),
-           "MOULD_OK|%s|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|"
-           "%.3f|%s|%.3f\n",
+           "MOULD_OK|%s|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|"
+           "%.3f|%s|%.3f",
            params.mouldName, params.fillVolume, params.fillSpeed,
            params.fillPressure, params.packVolume, params.packSpeed,
-           params.packPressure, params.packTime, params.coolingTime,
-           params.fillTrapAccel, params.fillTrapDecel, params.packTrapAccel,
-           params.packTrapDecel, modeStr, params.injectTorque);
+           params.packPressure, params.packTime, params.fillTrapAccel,
+           params.fillTrapDecel, params.packTrapAccel, params.packTrapDecel,
+           modeStr, params.injectTorque);
   uart_send(msg);
 }
 
@@ -233,6 +271,36 @@ void parseIncomingMessage(const char *message) {
   char cmd[32];
   const char *rest = next_token(message, cmd, sizeof(cmd), '|');
 
+  if (strcmp(cmd, "CMD") == 0) {
+    char subcmd[32];
+    rest = next_token(rest, subcmd, sizeof(subcmd), '|');
+    if (strcmp(subcmd, "GOTO") == 0) {
+      char targetState[32];
+      next_token(rest, targetState, sizeof(targetState), '|');
+      if (strcmp(targetState, "REFILL") == 0)
+        requestedRemoteState = REFILL;
+      else if (strcmp(targetState, "COMPRESSION") == 0)
+        requestedRemoteState = COMPRESSION;
+      else if (strcmp(targetState, "READY_TO_INJECT") == 0)
+        requestedRemoteState = READY_TO_INJECT;
+      else if (strcmp(targetState, "PURGE_ZERO") == 0)
+        requestedRemoteState = PURGE_ZERO;
+      else if (strcmp(targetState, "HOME") == 0)
+        requestedRemoteState = INIT_HOMING;
+      else
+        ESP_LOGW(TAG, "Unknown GOTO state: %s", targetState);
+    } else if (strcmp(subcmd, "TOGGLE") == 0) {
+      char toggleTarget[32];
+      next_token(rest, toggleTarget, sizeof(toggleTarget), '|');
+      if (strcmp(toggleTarget, "EOD") == 0) {
+        flags.endOfDay = !flags.endOfDay;
+        broadcastEndOfDay(flags.endOfDay);
+        ESP_LOGI(TAG, "Toggled EOD to %d", flags.endOfDay);
+      }
+    }
+    return;
+  }
+
   if (strcmp(cmd, "MOULD") == 0) {
     if (!isSafeForParamUpdate()) {
       ESP_LOGW(TAG, "MOULD ignored: unsafe state=%s",
@@ -269,9 +337,6 @@ void parseIncomingMessage(const char *message) {
         break;
       case 7:
         newParams.packTime = (float)atof(field);
-        break;
-      case 8:
-        newParams.coolingTime = (float)atof(field);
         break;
       case 9:
         newParams.fillTrapAccel = (float)atof(field);
@@ -387,7 +452,7 @@ void parseIncomingMessage(const char *message) {
   }
 
   if (strcmp(cmd, "QUERY_ERROR") == 0) {
-    broadcastError(fsm_state.error, "QUERY_RESPONSE");
+    broadcastError(fsm_state.error, fsm_state.errorMsg);
     return;
   }
 

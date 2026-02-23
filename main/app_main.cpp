@@ -35,6 +35,7 @@ static const char *TAG = "APP";
 fsm_inputs_t fsm_inputs = {};
 fsm_outputs_t fsm_outputs = {};
 fsm_state_t fsm_state = {};
+volatile InjectorStates requestedRemoteState = ERROR_STATE;
 
 // Hardware objects
 SafetyManager safety;
@@ -95,7 +96,6 @@ actualMouldParams_t currentMould = {"maceta",
                                     20.0f,
                                     20.0f,
                                     2.0f,
-                                    5.0f,
                                     TRAP_TRAJ_GENERAL_ACCEL_DECEL,
                                     TRAP_TRAJ_GENERAL_ACCEL_DECEL,
                                     TRAP_TRAJ_GENERAL_ACCEL_DECEL,
@@ -394,6 +394,77 @@ extern "C" void app_main(void) {
     {
       bool ignoreButtons = (time_utils::micros() - stateTimer < 500000ULL);
 
+      // Handle remote state requests from display UI
+      if (requestedRemoteState != ERROR_STATE) {
+        if (!ignoreButtons && !buttonLock) {
+          bool validTransition = false;
+          switch (fsm_state.currentState) {
+          case COMPRESSION:
+            if (requestedRemoteState == REFILL) {
+              Compression::reset();
+              moveLockActive = true;
+              validTransition = true;
+            }
+            break;
+          case READY_TO_INJECT:
+            if (requestedRemoteState == REFILL) {
+              ReadyToInject::reset();
+              moveLockActive = true;
+              validTransition = true;
+            } else if (requestedRemoteState == PURGE_ZERO) {
+              if (MotorWrapper::canStartMove()) {
+                ReadyToInject::reset();
+                validTransition = true;
+              }
+            }
+            break;
+          case PURGE_ZERO:
+            if (requestedRemoteState == READY_TO_INJECT) {
+              if (MotorWrapper::canStartMove()) {
+                PurgeZero::reset();
+                MotorWrapper::setModeAndMove(motor, 2, 1, 0, MODULE_PURGE_ZERO,
+                                             "Remote Stop");
+                validTransition = true;
+              }
+            }
+            break;
+          case INIT_HOMED_ENCODER_ZEROED:
+          case INIT_HOT_NOT_HOMED:
+            if (requestedRemoteState == INIT_HOMING) {
+              if (fsm_inputs.nozzleTemperature >= TEMP_MIN_MOVE) {
+                validTransition = true;
+              }
+            }
+            break;
+          case REFILL:
+            if (requestedRemoteState == COMPRESSION) {
+              if (MotorWrapper::canStartMove()) {
+                validTransition = true;
+              }
+            }
+            break;
+          default:
+            break;
+          }
+
+          if (validTransition) {
+            ESP_LOGI(TAG, "UART requested transition: %s -> %s",
+                     getStateName(fsm_state.currentState),
+                     getStateName(requestedRemoteState));
+            fsm_state.currentState = requestedRemoteState;
+            stateEntry = true;
+            stateTimer = time_utils::micros();
+            moveLockActive =
+                false; // Unlock physical buttons on remote transition
+          } else {
+            ESP_LOGW(TAG, "Ignored invalid UART transition: %s -> %s",
+                     getStateName(fsm_state.currentState),
+                     getStateName(requestedRemoteState));
+          }
+        }
+        requestedRemoteState = ERROR_STATE;
+      }
+
       switch (fsm_state.currentState) {
       case ERROR_STATE: {
         if (stateEntry) {
@@ -528,6 +599,8 @@ extern "C" void app_main(void) {
 
       case COMPRESSION: {
         if (stateEntry) {
+          motor.clearErrors(); // Clear stale stall/torque from previous runs
+          vTaskDelay(pdMS_TO_TICKS(50));
           Compression::begin(Compression::MODE_1_TRAVEL);
           stateEntry = false;
         }
@@ -577,6 +650,8 @@ extern "C" void app_main(void) {
 
       case PURGE_ZERO: {
         if (stateEntry) {
+          motor.clearErrors();
+          vTaskDelay(pdMS_TO_TICKS(50));
           PurgeZero::begin();
           stateEntry = false;
         }

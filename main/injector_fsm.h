@@ -1,87 +1,88 @@
 #ifndef INJECTOR_FSM_H
 #define INJECTOR_FSM_H
 
-#include <cstdint>
 #include "mould.h"
+#include <cstdint>
 
 enum InjectorStates : int {
-    ERROR_STATE,
-    INIT_HEATING,
-    INIT_HOT_NOT_HOMED,
-    INIT_HOMING,
-    INIT_HOMED_ENCODER_ZEROED,
-    REFILL,
-    COMPRESSION,
-    READY_TO_INJECT,
-    PURGE_ZERO,
-    ANTIDRIP,
-    INJECT,
-    HOLD_INJECTION,
-    RELEASE,
-    CONFIRM_MOULD_REMOVAL
+  ERROR_STATE,
+  INIT_HEATING,
+  INIT_HOT_NOT_HOMED,
+  INIT_HOMING,
+  INIT_HOMED_ENCODER_ZEROED,
+  REFILL,
+  COMPRESSION,
+  READY_TO_INJECT,
+  PURGE_ZERO,
+  ANTIDRIP,
+  INJECT,
+  HOLD_INJECTION,
+  RELEASE,
+  CONFIRM_MOULD_REMOVAL
 };
 
 struct fsm_inputs {
-    bool selectButtonPressed;
-    bool upButtonPressed;
-    bool downButtonPressed;
+  bool selectButtonPressed;
+  bool upButtonPressed;
+  bool downButtonPressed;
 
-    bool emergencyStop;
-    bool topEndStopActivated;
-    bool bottomEndStopActivated;
-    bool barrelEndStopActivated;
+  bool emergencyStop;
+  bool topEndStopActivated;
+  bool bottomEndStopActivated;
+  bool barrelEndStopActivated;
 
-    int nozzleTemperature;
-    int64_t actualENPosition;
-    int64_t actualMOTPosition;
-    int trackingError;
-    bool isRunning;
-    bool isHoming;
-    bool isCompressing;
+  int nozzleTemperature;
+  int64_t actualENPosition;
+  int64_t actualMOTPosition;
+  int trackingError;
+  bool isRunning;
+  bool isHoming;
+  bool isCompressing;
 };
 
 using fsm_inputs_t = fsm_inputs;
 
 struct commonInjectParams {
-    float trapTrajAccelDecel;
-    float compressTravelTorque;
-    uint32_t microIntervalMs;
-    uint32_t microDurationMs;
+  float trapTrajAccelDecel;
+  float compressTravelTorque;
+  uint32_t microIntervalMs;
+  uint32_t microDurationMs;
 
-    float purgeVelUp;
-    float purgeVelDown;
-    float purgeCurrentLimit;
+  float purgeVelUp;
+  float purgeVelDown;
+  float purgeCurrentLimit;
 
-    float antidripVel;
-    float antidripCurrentLimit;
+  float antidripVel;
+  float antidripCurrentLimit;
 
-    float releaseDist;
-    float releaseTrapVelLimit;
-    float releaseCurrentLimit;
+  float releaseDist;
+  float releaseTrapVelLimit;
+  float releaseCurrentLimit;
 };
 
 using commonInjectParams_t = commonInjectParams;
 
 struct fsm_state {
-    InjectorStates currentState;
-    uint16_t error;
-    actualMouldParams_t mouldParams;
+  InjectorStates currentState;
+  uint16_t error;
+  char errorMsg[64];
+  actualMouldParams_t mouldParams;
 };
 
 using fsm_state_t = fsm_state;
 
 struct fsm_outputs {
-    uint32_t currentSelectLEDcolour;
-    uint32_t currentUpLEDcolour;
-    uint32_t currentDownLEDcolour;
-    bool doCommandMotor;
-    int motorCommand;
-    int motorSpeed;
-    int motorDistance;
-    int motorAcceleration;
-    bool doHeaterControl;
-    int heaterTemperature;
-    bool setEncoderZero;
+  uint32_t currentSelectLEDcolour;
+  uint32_t currentUpLEDcolour;
+  uint32_t currentDownLEDcolour;
+  bool doCommandMotor;
+  int motorCommand;
+  int motorSpeed;
+  int motorDistance;
+  int motorAcceleration;
+  bool doHeaterControl;
+  int heaterTemperature;
+  bool setEncoderZero;
 };
 
 using fsm_outputs_t = fsm_outputs;
