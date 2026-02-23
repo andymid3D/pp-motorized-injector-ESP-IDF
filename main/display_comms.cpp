@@ -338,25 +338,25 @@ void parseIncomingMessage(const char *message) {
       case 7:
         newParams.packTime = (float)atof(field);
         break;
-      case 9:
+      case 8:
         newParams.fillTrapAccel = (float)atof(field);
         break;
-      case 10:
+      case 9:
         newParams.fillTrapDecel = (float)atof(field);
         break;
-      case 11:
+      case 10:
         newParams.packTrapAccel = (float)atof(field);
         break;
-      case 12:
+      case 11:
         newParams.packTrapDecel = (float)atof(field);
         break;
-      case 13:
+      case 12:
         if (field[0] == '3' || field[0] == 'T' || field[0] == 't')
           newParams.injectMode = INJECT_MODE_3D;
         else
           newParams.injectMode = INJECT_MODE_2D;
         break;
-      case 14:
+      case 13:
         newParams.injectTorque = (float)atof(field);
         break;
       default:
